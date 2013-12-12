@@ -1,79 +1,47 @@
-import hisearch as module
+# -*- coding: utf-8 -*-
+import haystack
 import unittest
 
-ITEMS = [dict(one=item[0], two=item[1]) for item in [(u"1",u"2"),
-	(u"2",u"4"),
-	(u"3",u"6")]]
+class TestNeedle(unittest.TestCase):
+	def setUp(self):
+		self.simple_needle = haystack.Needle("quick brown fox")
+		self.unicode_needle = haystack.Needle(u"árvíztűrő tükörfúrógép")
 
-class TestSingleElement(unittest.TestCase):
-	def test_single_element_is_returned(self):
-		item = dict(one=u"door", two=u"window")
-		hs = module.HiSearch(items=[item])
-		self.assertDictEqual(hs.search(dict(one=u"roof", two=u"floor"))[0]["item"], item)
+	def test_needle_matches_itself(self):
+		self.assertEqual(self.simple_needle.matches(self.simple_needle.text), 1.0)
 
-class TestRepresentation(unittest.TestCase):
-	def test_retrieve_as_set(self):
-		hs = module.HiSearch(items=ITEMS)
-		self.assertSetEqual(hs.items(), set(ITEMS))
+	def test_simple_needle_matches_text(self):
+		self.assertEqual(self.simple_needle.matches("quick brown fox"), 1.0)
 
-	def test_unicode(self):
-		pass
+	def test_unicode_needle_matches_text(self):
+		self.assertEqual(self.unicode_needle.matches(u"árvíztűrő tükörfúrógép"), 1.0)
 
-class TestConstructor(unittest.TestCase):
-	def test_non_unicode_fails(self):
-		def callable():
-			hs = module.HiSearch(items = [dict(one=1)])
-		self.assertRaises(Exception, callable)		
+	def test_imperfect_accent_match(self):
+		self.failIf(self.simple_needle.matches(u"arvizturo tukorfurogep")==1.0)
 
-	def test_dicts_are_receieved(self):
-		hs = module.HiSearch(items=ITEMS)
+class TestHayStack(unittest.TestCase):
+	def test_items_is_set(self):
+		needle1 = haystack.Needle("quick brown fox")
+		needle2 = haystack.Needle(u"árvíztűrő tükörfúrógép")
+		hs = haystack.HayStack(items=[needle1, needle2])
+		self.failUnless(isinstance(hs.items, set))
 
-	def test_incompatible_dicts_fail(self):
-		def callable():
-			hs = module.HiSearch(items = [dict(one=u"1", two=u"2"), dict(one=u"3", two=u"4", three=u"5")])
-		self.assertRaises(Exception, callable)
+	def test_construction_from_needles(self):
+		needle1 = haystack.Needle("quick brown fox")
+		needle2 = haystack.Needle(u"árvíztűrő tükörfúrógép")
+		hs = haystack.HayStack(items=[needle1, needle2])
+		self.assertSetEqual(hs.items, set([needle1, needle2]))
 
-	def test_not_iterable_fails(self):
-		def callable():
-			hs = module.HiSearch(items=1)
-		self.assertRaises(Exception, callable)
+	def test_construction_from_texts(self):
+		needles = ["quick brown fox", u"árvíztűrő tükörfúrógép"]
+		hs = haystack.HayStack(items=needles)
+		for item, text in zip(hs.items, needles):
+			self.assertEqual(item.text, text)
 
-	def test_order_does_not_matter(self):
-		hs1 = module.HiSearch(items=ITEMS)
-		hs2 = module.HiSearch(items=ITEMS.sorted())
-		self.assertSetEqual(hs1.items(), hs2.items())
-
-class TestExactMatch(unittest.TestCase):
-	def test_exact_match_of_all_parts(self):
-		hs = module.HiSearch(items=[(u"door", u"window")])
-		self.assertEqual(hs.search((u"door", u"window"))[0]["item"], (u"door", u"window"))
-
-	def test_match_of_some_parts_is_not_exact(self):
-		pass
-
-class TestSearch(unittest.TestCase):
-	def test_exact_match_is_exact(self):
-		hs = module.HiSearch(items=[(u"door", u"window")])
-		self.assertEqual(hs.search((u"door", u"window"))[0]["score"], 1.0)
-
-	def test_all_items_returned(self):
-		hs = module.HiSearch(items=ITEMS)
-		found = [item["item"] for item in hs.search((u"1", u"2"))]
-		self.assertSetEqual(set(found), set(ITEMS))
-
-	def test_threshold_respected(self):
-		hs = module.HiSearch(items=ITEMS)
-		for threshold in range(10):
-			found = [item["score"]>=threshold/10.0 for item in hs.search((u"1", u"2"), threshold=threshold/10.0)]
-			self.failUnless(all(found))
-		
-	def test_results_ordered_by_score(self):
-		hs = module.HiSearch(items=ITEMS)
-		found = [item["score"] for item in hs.search((u"1", u"2"))]
-		score = 1.0
-		for element in found:
-			self.failIf(element>score)
-			score = element		
+	def test_construction_from_mixed(self):
+		needles = [haystack.Needle("quick brown fox"), u"árvíztűrő tükörfúrógép"]
+		hs = haystack.HayStack(items=needles)
+		self.assertSetEqual(set([item.text for item in hs.items]), set(["quick brown fox", u"árvíztűrő tükörfúrógép"]))
 
 class TestKnownValues(unittest.TestCase):
 	pass
