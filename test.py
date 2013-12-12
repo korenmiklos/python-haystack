@@ -43,6 +43,32 @@ class TestHayStack(unittest.TestCase):
 		hs = haystack.HayStack(items=needles)
 		self.assertSetEqual(set([item.text for item in hs.items]), set(["quick brown fox", u"árvíztűrő tükörfúrógép"]))
 
+class TestSearch(unittest.TestCase):
+	def setUp(self):
+		needles = [u"quick brown fox", u"árvíztűrő tükörfúrógép"]
+		self.hs = haystack.HayStack(items=needles)
+
+	def test_empty_list_fails_gracefully(self):
+		self.assertListEqual(self.hs.search([]), [])
+
+	def test_text_passed_to_search(self):
+		found1 = self.hs.search("quick")[0]
+		found2 = self.hs.search(["quick"])[0]
+		self.assertDictEqual(found1, found2)
+
+	def test_single_item_found(self):
+		hs = haystack.HayStack(items=["abcd e"])
+		self.assertEqual(hs.search("abcd e")[0]["item"], "abcd e")
+
+	def test_exact_match_is_one(self):
+		results = self.hs.search(u"quick brown fox")
+		self.assertEqual(results[0]["score"], 1.0)
+
+	def test_score_same_for_needle(self):
+		needle = haystack.Needle("brown fox")
+		hs = haystack.HayStack(items=[needle])
+		self.assertEqual(hs.search("blue fox")[0]["score"], needle.matches("blue fox"))
+
 class TestKnownValues(unittest.TestCase):
 	pass
 

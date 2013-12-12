@@ -11,11 +11,12 @@ class Needle(object):
 		else:
 			return 0.0
 
-class HayStack(object):
+class HayStack(Needle):
 	'''
 	A HayStack is a collection of HayStacks or Needles. 
 	'''
-	def __init__(self, items):
+	def __init__(self, items, text=None):
+		super(HayStack, self).__init__(text)
 		self.items = set([])
 		for item in items:
 			if isinstance(item, basestring):
@@ -24,4 +25,16 @@ class HayStack(object):
 				self.items.add(item)
 
 	def search(self, list_of_text):
-		pass
+		if len(list_of_text)==0:
+			return []
+		if isinstance(list_of_text, basestring):
+			list_of_text = [list_of_text]
+		text = list_of_text[0]
+		best_score = 0.0
+		for item in self.items:
+			new_score = item.matches(text)
+			if new_score>=best_score:
+				best_score = new_score
+				found = item
+		return [dict(item=found.text, score=best_score)]
+
