@@ -1,4 +1,4 @@
-python-hierarchical-search
-==========================
+python-haystack
+===============
 
-ngram search within hieararchical data
+An ngram-based text search library for hierarchical data.
